@@ -1,0 +1,345 @@
+# 台灣法律計算工具 — 工具註冊表（canonical；程式動態讀，勿寫死 code）
+# 來源：司法院辦案小工具 gdgt.judicial.gov.tw/judtool/MAINPAGE.htm
+#       依司法院辦案小工具各頁「說明」欄所載計算式與現行法令獨立實作
+# 鐵則：status != ready 者，router 一律回 ok:false + needs，不得臆測數字。
+meta:
+  version: 0.1.1
+  updated: "2026-09-24"
+  port: 8004
+  principle: "取不到不准臆測；每個 ready 工具必附 basis（法源/計算式出處）"
+  history:
+    - {date: "2026-09-24", note: "v0.1.1 建立；17 支司法院小工具（含1支兩版合併）+ Excel專區借款還款餘額表 + 小算盤 + 銀行分期 = 20 支入冊"}
+
+groups:
+  通用: 期間、規費
+  民事: 損害賠償、勞動、共有
+  刑事: 刑度
+  其他: 土地、租金、繼承
+  自建: Simon 追加（非司法院小工具）
+
+tools:
+
+# ── 通用 ──────────────────────────────────────────────
+  - id: deadline.appeal
+    name: 上訴抗告再審期間試算
+    group: 通用
+    photo: 01_IMG_5419
+    status: planned
+    summary: 裁判收受日 + 不變期間 + 在途期間 + 公示送達生效期間 → 上訴/抗告末日（含假日順延）
+    inputs: [原審法院, 上訴/抗告/再審/就審/再審抗告, 送達方式(一般/寄存/公示送達), 當事人住居所(臺灣/大陸港澳/國外), 裁判收受日, 是否檢查假日]
+    needs:
+      - "司法院訴訟當事人在途期間標準表（法院 × 住居地 → 在途日數）"
+      - "國定假日表（逐年，供末日順延）"
+    basis: [民訴§440, 民訴§487, 民訴§500, 民訴§162, 刑訴§349, 司法院訴訟當事人在途期間標準]
+
+  - id: time.elapsed
+    name: 經過時間試算
+    group: 通用
+    photo: 02_IMG_5420
+    status: ready
+    module: period
+    summary: 起算日~終止日（起算日計入、終止日不計）→ 總天數、折算X年Y月Z日、總月數+殘餘日/分母、總年數+殘餘日/年度總日數
+    params:
+      start: {type: roc_date, required: true, desc: "起算日 YYYMMDD"}
+      end:   {type: roc_date, required: true, desc: "終止日 YYYMMDD"}
+    basis: [民法§120, 民法§121, 民法§123]
+
+  - id: fee.court
+    name: 司法規費試算
+    group: 通用
+    photo: 03_IMG_5421
+    status: planned
+    summary: 類別/程序/適用法條 + 標的金額 → 應徵費用、應補繳費用（新法114/1/1後、舊法1131231前兩版）
+    inputs: [類別(民事/家事/行政), 訴訟/非訟, 因財產權起訴·上訴·再審之訴, 非因財產權, 聲請再審, 抗告/再為抗告, 聲請事件, 聲請調解, 聲請強制執行, 勞動事件暫免2/3, 標的金(價)額, 已繳費用]
+    needs:
+      - "民訴§77-13 級距表（新法：114/1/1 施行；舊法：113/12/31 前）逐級距金額與費率"
+      - "民訴§77-14~§77-27 各該條之定額"
+      - "強制執行法§28-2、§28-3 執行費率"
+      - "勞動事件法§12、§13 暫免徵收比例"
+    known_anchor: "標的 0 元 → 第一審 1,500 元；第二、三審 2,250 元（新法，照片實測）"
+    basis: [民訴§77-13, §77-14, §77-16, §77-17, §77-18, §77-19, §77-20, §77-27, 強執法§28-2, §28-3, 勞動事件法§12, §13]
+
+# ── 民事 ──────────────────────────────────────────────
+  - id: depreciation
+    name: 折舊自動試算表
+    group: 民事
+    photo: 04_IMG_5422
+    status: ready
+    module: money
+    summary: 平均法/定率遞減法 → 累積折舊費用、現值、折舊率、與購入成本比例
+    params:
+      cost: {type: number, required: true, desc: 購入成本}
+      years: {type: int, required: true, desc: "耐用年數（3=機械腳踏車 4=運輸業用客貨車 5=非運輸業用客貨車，或自填）"}
+      used_years: {type: int, default: 0, desc: 使用年數}
+      used_months: {type: int, default: 0, desc: 使用月數}
+      method: {type: enum, values: [average, declining], default: average, desc: 平均法/定率遞減法}
+      residual: {type: number, default: null, desc: "殘價（null=自動計算：平均法成本/(年數+1)）"}
+    basis: ["營利事業所得稅查核準則§95（平均法殘價＝成本÷(耐用年數+1)）", 固定資產耐用年數表, 所得稅法§54]
+
+  - id: hoffmann.lump
+    name: 霍夫曼一次給付試算
+    group: 民事
+    photo: 05_IMG_5423
+    status: ready
+    module: hoffmann
+    summary: 定期給付（每年/每月）× 期數 → 扣除中間利息之一次給付現值（單利霍夫曼式）
+    params:
+      amount: {type: number, required: true, desc: 每期給付金額}
+      unit: {type: enum, values: [year, month], default: year, desc: 每期按年/按月}
+      periods: {type: number, required: true, desc: "給付期數（可含小數＝不足1期之比例）"}
+      rate: {type: number, default: 0.05, desc: 年利率}
+      persons: {type: number, default: 1, desc: 扶養人數}
+      share_pct: {type: number, default: 100, desc: 負擔比例(%)}
+      deduct_first: {type: bool, default: false, desc: "首期是否扣除中間利息（false＝實務多數說：不扣）"}
+    basis: [民法§203法定利率5%, 霍夫曼式單利折現, 最高法院22年上字第353號意旨]
+
+  - id: hoffmann.pv_periodic
+    name: 定期給付折現金額試算（霍夫曼計算式）
+    group: 民事
+    photo: 06_IMG_5424
+    status: ready
+    module: hoffmann
+    summary: 從A時點到B時點每月給付M元，全部折現至S時點之總金額（扶養費提前一次給付）
+    params:
+      monthly: {type: number, required: true, desc: 每月給付金額 M}
+      start: {type: roc_date, required: true, desc: "給付開始日 A（如滿65歲退休日）"}
+      end: {type: roc_date, required: true, desc: "給付屆滿日 B（如平均餘命日，不含此日）"}
+      base: {type: roc_date, required: true, desc: "折現基準日 S（如侵權發生日或起訴日）"}
+      rate: {type: number, default: 0.05, desc: 年利率}
+      deduct_first: {type: bool, default: false}
+    basis: [民法§203, 民法§192Ⅱ, 霍夫曼式單利折現]
+
+  - id: severance
+    name: 資遣費試算
+    group: 民事
+    photo: 07_IMG_5425
+    status: ready
+    module: labor
+    summary: 月平均工資 × 年資 → 舊制(勞基法§17)／新制(勞退條例§12，上限6個月)／94.7.1 跨制併計
+    params:
+      avg_wage: {type: number, desc: "月平均工資（給了就直接用；否則由 wages6 推算）"}
+      wages6: {type: array, desc: "事由發生前6個月工資（由新到舊），供算法一/二推算平均工資"}
+      wage_method: {type: enum, values: [m1, m2], default: m1, desc: "算法一＝6個月工資總額÷6；算法二＝總額÷期間總日數×30"}
+      onboard: {type: roc_date, required: true, desc: 到職日}
+      leave: {type: roc_date, required: true, desc: 離職日}
+      event: {type: roc_date, desc: "計算事由發生日（未填＝離職日）"}
+      scheme: {type: enum, values: [old, new, both], default: both, desc: "舊制/新制/以94.7.1切分併計"}
+      switch_date: {type: roc_date, default: "0940701", desc: 新制轉換日}
+    basis: [勞基法§17, 勞基法§2④平均工資, 勞退條例§12, "臺灣高等法院110年度勞上字第675號（算法二）", "行政院勞工委員會83.4.9台83勞動2字第25564號函（算法一）"]
+
+  - id: interest.penalty
+    name: 利息及違約金試算（司法規費試算）
+    group: 民事
+    photo: 08_IMG_5426
+    status: ready
+    module: money
+    summary: 本金 × 給付基數(以年為單位) × 年息 → 利息；另計按月給付之違約金
+    params:
+      principal: {type: number, required: true, desc: 計算本金}
+      rate: {type: number, required: true, desc: "年息（0.05 或 5 皆可）"}
+      start: {type: roc_date, required: true, desc: "起算日（計入）"}
+      end: {type: roc_date, required: true, desc: "終止日（計入）"}
+      kind: {type: enum, values: [interest, penalty_monthly], default: interest}
+      monthly: {type: number, desc: "kind=penalty_monthly 時的按月給付金額"}
+    basis: [民法§121, 民法§123, 民法§203, 民法§233]
+
+  - id: leave.annual
+    name: 特休日數試算
+    group: 民事
+    photo: 09_IMG_5427
+    status: ready
+    module: labor
+    summary: 到職日~離職日 → 逐週年度可休日數、工作滿期、未休日數折算工資
+    params:
+      onboard: {type: roc_date, required: true}
+      leave: {type: roc_date, required: true}
+      taken_days: {type: number, default: 0, desc: 已休日數}
+      daily_wage: {type: number, desc: "日工資（或給 monthly_wage）"}
+      monthly_wage: {type: number, desc: "月平均工資（日工資＝月工資/30）"}
+      paid: {type: number, default: 0, desc: 已給付工資}
+    table_ref: tables.annual_leave
+    basis: [勞基法§38, 勞基法施行細則§24, §24-1]
+
+  - id: share.ratio
+    name: 共有人應有部分比例
+    group: 民事
+    photo: 10_IMG_5428
+    status: ready
+    module: land
+    summary: 各共有人應有部分（分數）→ 通分、合計檢核、最小公分母
+    params:
+      owners: {type: array, required: true, desc: "[{name, num, den}]"}
+    basis: [民法§817, 土地登記規則]
+
+# ── 刑事 ──────────────────────────────────────────────
+  - id: sentence.range
+    name: 法定刑度加重減輕試算
+    group: 刑事
+    photo: 11_IMG_5429
+    status: planned
+    summary: 法定刑（死刑/無期/有期/拘役/罰金）× 加重減輕事由（遞加遞減次數）→ 處斷刑範圍
+    inputs: [法定刑下上限, 應加重事由(1/2、1/3、2/3), 得加重事由, 應減輕事由, 得減輕事由, 遞加減次數]
+    needs:
+      - "刑法§64~§73 加減例之遞加遞減順序（§70 遞加遞減、§71 先加後減、§72 有二種以上刑名先定刑名）"
+      - "各該加重減輕事由之範例法條對照表（兒少§112Ⅰ、野保§41Ⅱ、毒危§17Ⅰ/Ⅱ、道交§86Ⅰ、刑法§116、§30Ⅱ 等，照片右欄已列）"
+    risk: "刑度算錯＝在法官前穿幫；未取得遞加減完整規則前不得出貨"
+    basis: [刑法§33, §64, §65, §66, §67, §68, §70, §71, §72, §73]
+
+# ── 其他（土地／租金／繼承）────────────────────────────
+  - id: land.partition
+    name: 土地分割共有物面積與地價之試算
+    group: 其他
+    photo: 12_IMG_5430
+    status: ready
+    module: land
+    summary: 多筆土地（地號/面積/公告現值）× 共有人應有部分 → 應有面積、應有價額
+    params:
+      parcels: {type: array, required: true, desc: "[{lot, area_m2, unit_price}]"}
+      owners: {type: array, required: true, desc: "[{lot, name, num, den}]"}
+    basis: [民法§823, §824, 土地法§34-1]
+
+  - id: land.keep_share
+    name: 土地單筆部分維持共有／應有部分之試算
+    group: 其他
+    photo: 13_IMG_5431
+    status: ready
+    module: land
+    summary: 分割前應有部分 → 維持共有者在該筆土地上分割後之應有部分（原應有部分 ÷ 維持共有者合計）
+    params:
+      area_m2: {type: number, desc: 總面積}
+      unit_price: {type: number, desc: "地價(元/㎡)"}
+      owners: {type: array, required: true, desc: "[{title, name, num, den}]（全部列入者即維持共有人）"}
+    basis: [民法§824Ⅳ, 民法§824-1]
+
+  - id: land.merge_share
+    name: 土地數筆合併後應有部分之試算
+    group: 其他
+    photo: 14_IMG_5432
+    status: ready
+    module: land
+    summary: 各筆（地號/面積/原應有部分）→ 應有面積合計、合併後應有部分
+    params:
+      rows: {type: array, required: true, desc: "[{name, lot, num, den, area_m2}]"}
+    basis: [民法§823, 地籍測量實施規則§224]
+
+  - id: rent.unjust
+    name: 相當租金不當得利之試算（5年與按月給付版）
+    group: 其他
+    photo: 15_IMG_5433
+    status: ready
+    module: money
+    summary: 申報地價 × 占用面積 × 年息 × 期間 × 原告應有部分 → 不當得利金額；另出按月給付額
+    params:
+      declared_price: {type: number, required: true, desc: "申報地價（元/㎡）"}
+      area_m2: {type: number, required: true, desc: "占用面積（㎡）"}
+      rate: {type: number, required: true, desc: "年息(%)；土地法§97/§105 實務上限為申報總地價年息10%"}
+      start: {type: roc_date, required: true, desc: 請求起算日}
+      end: {type: roc_date, required: true, desc: 請求終止日}
+      num: {type: int, default: 1, desc: 原告應有部分分子}
+      den: {type: int, default: 1, desc: 原告應有部分分母}
+    caution: "年息係法官裁量（土地法§97Ⅰ上限10%、§105準用），本工具不代為裁量，僅照輸入計算"
+    basis: [民法§179, 土地法§97, 土地法§105, 平均地權條例§16]
+
+  - id: penalty.interest
+    name: 違約金與利息之試算（司法規費試算）
+    group: 其他
+    photo: 16_IMG_5434
+    status: ready
+    module: money
+    summary: 多列請求項目（本金/利息/違約金）合併試算與小計
+    params:
+      items: {type: array, required: true, desc: "[{kind: principal|interest|penalty, amount, start, end, rate|monthly}]"}
+    basis: [民法§121, §123, §203, §233, §250]
+
+  - id: inheritance.tree
+    name: 繼承系統表
+    group: 其他
+    photo: 17_IMG_5435
+    status: planned
+    summary: 被繼承人/繼承人/出生死亡日/繼承狀態 → 繼承系統表與應繼分
+    inputs: [稱謂, 繼承人, 被繼承人, 繼承狀態, 出生日期, 死亡日期, 結婚日期, 建檔日期, 應繼分]
+    needs:
+      - "應繼分演算（民法§1138 順序、§1140 代位、§1144 配偶、§1176 拋棄之歸屬）"
+      - "系統表之圖形輸出（可掛 PR002 事實圖生成）"
+    basis: [民法§1138, §1139, §1140, §1141, §1144, §1176]
+
+# ── 自建（非司法院小工具）──────────────────────────────
+  - id: calc.eval
+    name: 計算機（小算盤式）
+    group: 自建
+    status: ready
+    module: basic
+    summary: 給 LLM 用的安全算式求值器；高精度 Decimal，不過機率層
+    params:
+      expr: {type: string, required: true, desc: "算式，如 (1234567*0.05*88/365)"}
+      precision: {type: int, default: 2, desc: 四捨五入位數}
+      round_mode: {type: enum, values: [half_up, half_even, floor, ceil, none], default: half_up}
+    note: "支援 + - * / // % ** ( ) 與 abs min max round sqrt floor ceil sum；禁函式呼叫與屬性存取"
+
+  - id: loan.installment
+    name: 銀行分期利率試算
+    group: 自建
+    status: ready
+    module: loan
+    summary: 三種模式——給利率算月付/給月付反解實質年利率(IRR)/手續費分期換算實質年利率
+    params:
+      mode: {type: enum, values: [pmt, rate, addon], default: pmt}
+      principal: {type: number, required: true, desc: 貸款或分期本金}
+      months: {type: int, required: true, desc: 期數}
+      apr: {type: number, desc: "名目年利率（mode=pmt 必填，0.0688 或 6.88 皆可）"}
+      payment: {type: number, desc: "每期應繳（mode=rate 必填）"}
+      fee: {type: number, default: 0, desc: "mode=addon：手續費/利息總額（攤入各期）"}
+      schedule: {type: bool, default: false, desc: 是否回傳逐期攤還表}
+    note: "等額本息（annuity）；mode=rate/addon 以二分法解 IRR 再年化"
+
+  - id: loan.balance
+    name: 借款還款餘額計算表
+    group: 自建
+    origin: "對照司法院辦案小工具 Excel 專區同名工具之公開說明"
+    status: ready
+    module: loan
+    summary: 陸續借款＋陸續還款 → 依日期排序逐段計息 → 期末餘額（負數＝溢償）
+    params:
+      events: {type: array, required: true, desc: "[{date, lend, repay}]；借款填 lend、還款填 repay"}
+      apr: {type: number, required: true, desc: "年利率（5 或 0.05 皆可）"}
+      basis: {type: int, default: 1, desc: "YEARFRAC：0=美30/360 1=實際天數 2=實際/360 3=實際/365 4=歐30/360；作者建議 1"}
+      compound: {type: bool, default: true, desc: "利息是否滾入累計本金；爭執複利時改 false（民法§207）"}
+    caution: "compound=true 為複利；民法§207 原則禁止利息滾入原本再生利息，除當事人約定或商業習慣"
+    lesson: "中間小結不得四捨五入（逐次捨入會累積成可見誤差）；本實作全程 Decimal，僅輸出時捨入"
+    basis: [民法§203, 民法§207, 民法§323]
+
+tables:
+  annual_leave:
+    desc: 勞基法§38 特別休假日數（年資 → 日數）
+    basis: 勞基法§38Ⅰ、施行細則§24
+    rows:
+      - {from_months: 6,   to_months: 12,  days: 3,  label: 6個月以上未滿1年}
+      - {from_months: 12,  to_months: 24,  days: 7,  label: 1年以上未滿2年}
+      - {from_months: 24,  to_months: 36,  days: 10, label: 2年以上未滿3年}
+      - {from_months: 36,  to_months: 60,  days: 14, label: 3年以上未滿5年}
+      - {from_months: 60,  to_months: 120, days: 15, label: 5年以上未滿10年}
+    over_10_years: {base_days: 15, add_per_year: 1, cap: 30, label: 10年以上每1年加給1日，加至30日為止}
+
+# 詞彙路由表（/calc/match 用；純字串比對、零 LLM）。
+# 學習路徑鐵則：討論結晶入可校訂 YAML、程式動態讀，勿寫死 code。改這裡免重啟。
+routing:
+  time.elapsed:         [經過時間, 幾天, 多久, 算日數, 期間多長, 相隔, 經過幾年]
+  interest.penalty:     [利息, 年息, 法定利息, 遲延利息, 違約金, 按月給付]
+  penalty.interest:     [多筆, 合併試算, 請求項目]
+  depreciation:         [折舊, 殘價, 耐用年數, 現值, 定率遞減, 車損, 修復費用]
+  rent.unjust:          [相當租金, 不當得利, 占用, 無權占有, 申報地價]
+  hoffmann.lump:        [霍夫曼, 一次給付, 中間利息, 勞動能力減損]
+  hoffmann.pv_periodic: [定期給付, 折現, 扶養費, 提前給付, 餘命]
+  severance:            [資遣費, 平均工資, 年資, 勞退, 非自願離職]
+  leave.annual:         [特休, 特別休假, 未休, 休假日數, 年假]
+  share.ratio:          [應有部分, 共有人, 持分, 比例]
+  land.partition:       [分割共有物, 土地分割, 公告現值, 應有面積]
+  land.keep_share:      [維持共有, 分割後應有部分]
+  land.merge_share:     [合併, 數筆土地, 合併後應有部分]
+  loan.installment:     [分期, 貸款, 月付, 本息, 實質年利率, 手續費, 攤還]
+  loan.balance:         [借款, 還款, 餘額, 溢償, 清償, 陸續, 借還款, 消費借貸, 還欠多少]
+  calc.eval:            [算一下, 計算, 等於多少, 小算盤]
+  deadline.appeal:      [上訴期間, 抗告期間, 在途期間, 不變期間, 上訴末日, 確定日]
+  fee.court:            [裁判費, 規費, 訴訟費用, 應徵費用, 補繳]
+  sentence.range:       [法定刑, 加重, 減輕, 處斷刑, 刑度]
+  inheritance.tree:     [繼承系統表, 應繼分, 繼承人]
