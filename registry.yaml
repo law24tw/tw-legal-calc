@@ -3,7 +3,7 @@
 #       依司法院辦案小工具各頁「說明」欄所載計算式與現行法令獨立實作
 # 鐵則：status != ready 者，router 一律回 ok:false + needs，不得臆測數字。
 meta:
-  version: 0.1.1
+  version: 0.1.2
   updated: "2026-09-24"
   port: 8004
   principle: "取不到不准臆測；每個 ready 工具必附 basis（法源/計算式出處）"
@@ -74,7 +74,8 @@ tools:
       used_months: {type: int, default: 0, desc: 使用月數}
       method: {type: enum, values: [average, declining], default: average, desc: 平均法/定率遞減法}
       residual: {type: number, default: null, desc: "殘價（null=自動計算：平均法成本/(年數+1)）"}
-    basis: ["營利事業所得稅查核準則§95（平均法殘價＝成本÷(耐用年數+1)）", 固定資產耐用年數表, 所得稅法§54]
+    basis: ["所得稅法§54第2項（預估殘值、減除後為計算基礎）", "營利事業所得稅查核準則§95第6款（不滿一月以月計）", 固定資產耐用年數表]
+    residual_note: "殘價＝成本÷(耐用年數+1)＝法院車損折舊實務慣用，非法條明文"
 
   - id: hoffmann.lump
     name: 霍夫曼一次給付試算
@@ -149,16 +150,16 @@ tools:
     photo: 09_IMG_5427
     status: ready
     module: labor
-    summary: 到職日~離職日 → 逐週年度可休日數、工作滿期、未休日數折算工資
+    summary: 到職日~離職日 → 逐週年度可休日數、未休日數折算工資（權利於期間首日取得，離職當期全額計，不按比例）
     params:
       onboard: {type: roc_date, required: true}
       leave: {type: roc_date, required: true}
       taken_days: {type: number, default: 0, desc: 已休日數}
       daily_wage: {type: number, desc: "日工資（或給 monthly_wage）"}
-      monthly_wage: {type: number, desc: "月平均工資（日工資＝月工資/30）"}
+      monthly_wage: {type: number, desc: "契約終止前最近一個月正常工作時間所得之工資（計月者；一日工資＝此數÷30，施行細則§24-1Ⅱ①(二)）。注意不是勞基法§2④的平均工資"}
       paid: {type: number, default: 0, desc: 已給付工資}
     table_ref: tables.annual_leave
-    basis: [勞基法§38, 勞基法施行細則§24, §24-1]
+    basis: [勞基法§38Ⅰ、Ⅳ, 勞基法施行細則§24Ⅰ, 勞基法施行細則§24-1Ⅱ①]
 
   - id: share.ratio
     name: 共有人應有部分比例

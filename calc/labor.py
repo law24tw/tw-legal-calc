@@ -106,36 +106,50 @@ def annual_leave(onboard=None, leave=None, taken_days=0, daily_wage=None,
         extra = (start_months - 120) // 12 + 1
         return int(min(over["base_days"] + extra * over["add_per_year"], over["cap"]))
 
+    # 2026-09-24 訂正：舊版對離職當年度「按在職比例」折算並掛「施行細則§24-1Ⅱ②」——該款實為
+    # 「發給工資之期限：契約終止依第九條發給」，並無比例計給之規定，係捏造法源。
+    # 正解（逐字核對現行條文）：
+    #   施行細則§24Ⅰ：勞工於符合勞基法§38Ⅰ所定條件時「取得」特別休假之權利 → 期間首日一次取得全額。
+    #   勞基法§38Ⅳ：因年度終結或契約終止而未休之日數，雇主應發給工資。
+    #   施行細則§24-1Ⅱ①(一)：按勞工未休畢之特別休假日數，乘以其一日工資計發。 → 無比例。
     periods, seg_start, total_days = [], add_months(ob, 6), D(0)
     if seg_start > lv:
         return {"onboard": roc(ob), "leave": roc(lv), "periods": [],
                 "note": "在職未滿6個月，尚無特別休假（勞基法§38Ⅰ①）", "entitled_days": 0}
-    seg_months = 6
+    seg_months, notes = 6, []
     while seg_start < lv:
         seg_end = add_years(ob, 1) if seg_months == 6 else add_years(seg_start, 1)
         full = days_for(seg_months)
-        cut = min(seg_end, lv)
-        span = (seg_end - seg_start).days
-        served = (cut - seg_start).days
-        prorated = D(full) if cut >= seg_end else (D(full) * D(served) / D(span))
+        complete = lv >= seg_end
         periods.append({
             "period": f"{roc(seg_start)}~{roc(seg_end - timedelta(days=1))}",
+            "acquired_on": roc(seg_start),
             "service_at_start": f"滿{seg_months // 12}年{seg_months % 12}月" if seg_months >= 12 else "滿6個月",
             "entitled_days": full,
-            "complete": cut >= seg_end,
-            "days_counted": _r(prorated, 1),
-            "note": "" if cut >= seg_end else f"契約終止時當年度未屆滿，按在職比例 {served}/{span} 計給（施行細則§24-1Ⅱ②）",
+            "period_complete": complete,
+            "days_counted": float(full),
+            "note": "" if complete else
+                    "契約終止時本期間尚未屆滿，惟權利已於期間首日取得（施行細則§24Ⅰ），"
+                    "未休日數全額計給，不按在職比例折算（勞基法§38Ⅳ、施行細則§24-1Ⅱ①(一)）",
         })
-        total_days += prorated
+        total_days += D(full)
         seg_start, seg_months = seg_end, (12 if seg_months == 6 else seg_months + 12)
+    if seg_start == lv:
+        notes.append(f"離職日 {roc(lv)} 恰為下一週年日：若勞工當日仍在職已滿年資，另有 "
+                     f"{days_for(seg_months)} 日特休權利，本工具未計入，請依事實認定")
+    notes.append("離職結算以週年制（到職日起算）計算法定應休日數。事業單位與勞工協商採曆年制等行使期間者，"
+                 "其已給日數不得少於本結果（施行細則§24Ⅱ）")
     unused = total_days - _d(taken_days)
     dw = _d(daily_wage) if daily_wage is not None else (_d(monthly_wage) / 30 if monthly_wage else None)
     res = {"onboard": roc(ob), "leave": roc(lv), "periods": periods,
-           "entitled_days": _r(total_days, 1), "taken_days": float(_d(taken_days)),
-           "unused_days": _r(unused, 1),
-           "basis": ["勞基法§38", "勞基法施行細則§24", "§24-1"]}
+           "entitled_days": float(total_days), "taken_days": float(_d(taken_days)),
+           "unused_days": _r(unused, 1), "notes": notes,
+           "basis": ["勞基法§38Ⅰ、Ⅳ", "勞基法施行細則§24Ⅰ（取得時點）",
+                     "勞基法施行細則§24-1Ⅱ①(一)（未休日數×一日工資）",
+                     "勞基法施行細則§24-1Ⅱ①(二)（一日工資）"]}
     if dw is not None:
         res["daily_wage"] = _r(dw, 2)
         res["unused_wage"] = _r(dw * unused - _d(paid))
-        res["formula"] = "未休日數 × 日工資 − 已給付工資（施行細則§24-1Ⅱ）"
+        res["formula"] = ("未休日數 × 一日工資 − 已給付工資；一日工資（計月者）＝契約終止前最近一個月"
+                          "正常工作時間所得之工資 ÷ 30（施行細則§24-1Ⅱ①(一)(二)）")
     return res

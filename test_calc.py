@@ -76,5 +76,15 @@ r3 = router.run("loan.balance", {"events": ev, "apr": 5, "basis": 3})
 ck_eq("basis 標示", r3["result"]["basis_label"], "實際/365")
 
 
+# ── 特休離職當期全額（v0.1.2 訂正）
+r = router.run("leave.annual", {"onboard": "1100101", "leave": "1150401", "monthly_wage": 45000})
+ck("特休110.1.1~115.4.1 折算工資", r["result"]["unused_wage"], 94500, 0)
+ck_eq("離職當期全額不打折", r["result"]["periods"][-1]["days_counted"], 15.0)
+# ── 折舊平均法對照法院實例（成本7,778、5年、用3年2月 → 折舊4,105、餘3,673）
+r = router.run("depreciation", {"cost": 7778, "years": 5, "used_years": 3, "used_months": 2})
+ck("折舊實例累積折舊", r["result"]["accumulated_depreciation"], 4105)
+ck("折舊實例現值", r["result"]["present_value"], 3673)
+
+
 print("\n" + ("全部通過" if not F else f"失敗 {len(F)} 項：{F}"))
 sys.exit(1 if F else 0)

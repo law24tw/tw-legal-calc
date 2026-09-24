@@ -67,7 +67,7 @@ def depreciation(cost=0, years=0, used_years=0, used_months=0, method="average",
     cost = _d(cost); n = int(years)
     if cost <= 0 or n <= 0:
         raise CalcError("購入成本與耐用年數均須大於 0")
-    um = int(used_years) * 12 + int(used_months)        # 不足一月不計
+    um = int(used_years) * 12 + int(used_months)        # 月數由呼叫端輸入；畸零日數依查核準則§95⑥進位為一月
     if method in ("average", "平均法"):
         res = _d(residual) if residual is not None else cost / (n + 1)
         per_year = (cost - res) / n
@@ -76,7 +76,8 @@ def depreciation(cost=0, years=0, used_years=0, used_months=0, method="average",
         acc = per_year * full_y + (per_year * rem_m / 12 if full_y < n else 0)
         acc = min(acc, cost - res)
         rate = per_year / cost if cost else D(0)
-        formula = f"每年折舊 =(成本 {cost} − 殘價 {res}) ÷ 耐用年數 {n}；不足一年按月計，不足一月不計"
+        formula = (f"每年折舊 =(成本 {cost} − 殘價 {res}) ÷ 耐用年數 {n}；未滿一年按月數比例計，"
+                   "不滿一月者以一月計（查核準則§95第6款），請將畸零日數進位為一月後再輸入 used_months")
     elif method in ("declining", "定率遞減法"):
         res = _d(residual) if residual is not None else cost / (n + 1)
         rate = 1 - D(str((float(res) / float(cost)) ** (1.0 / n)))
@@ -96,7 +97,11 @@ def depreciation(cost=0, years=0, used_years=0, used_months=0, method="average",
             "depreciation_rate": _r(rate, 6), "formula": formula,
             "accumulated_depreciation": _r(acc), "present_value": _r(pv),
             "acc_over_cost": _r(acc / cost, 4), "pv_over_cost": _r(pv / cost, 4),
-            "basis": "營利事業所得稅查核準則§95；固定資產耐用年數表"}
+            "basis": ["所得稅法§54第2項（應預估殘值，以減除殘值後之餘額為計算基礎）",
+                      "營利事業所得稅查核準則§95第6款（未滿一年按月比例；不滿一月以月計）",
+                      "固定資產耐用年數表"],
+            "residual_note": "殘價＝成本÷(耐用年數+1) 為法院車損折舊實務慣用算法，非查核準則或所得稅法明文；"
+                             "當事人有爭執時可改以 residual 參數輸入"}
 
 
 # ── 相當租金不當得利 ──────────────────────────────────
