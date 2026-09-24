@@ -15,7 +15,7 @@ groups:
   民事: 損害賠償、勞動、共有
   刑事: 刑度
   其他: 土地、租金、繼承
-  自建: Simon 追加（非司法院小工具）
+  自建: 本專案追加（非司法院小工具）
 
 tools:
 
@@ -48,16 +48,32 @@ tools:
     name: 司法規費試算
     group: 通用
     photo: 03_IMG_5421
-    status: planned
-    summary: 類別/程序/適用法條 + 標的金額 → 應徵費用、應補繳費用（新法114/1/1後、舊法1131231前兩版）
-    inputs: [類別(民事/家事/行政), 訴訟/非訟, 因財產權起訴·上訴·再審之訴, 非因財產權, 聲請再審, 抗告/再為抗告, 聲請事件, 聲請調解, 聲請強制執行, 勞動事件暫免2/3, 標的金(價)額, 已繳費用]
-    needs:
-      - "民訴§77-13 級距表（新法：114/1/1 施行；舊法：113/12/31 前）逐級距金額與費率"
-      - "民訴§77-14~§77-27 各該條之定額"
-      - "強制執行法§28-2、§28-3 執行費率"
-      - "勞動事件法§12、§13 暫免徵收比例"
-    known_anchor: "標的 0 元 → 第一審 1,500 元；第二、三審 2,250 元（新法，照片實測）"
-    basis: [民訴§77-13, §77-14, §77-16, §77-17, §77-18, §77-19, §77-20, §77-27, 強執法§28-2, §28-3, 勞動事件法§12, §13]
+    status: ready
+    module: fees
+    summary: 標的金額 → 民訴§77-13 累進級距 + §77-27 高院加徵（累進三級）→ 應徵/應補繳；含上訴加徵、勞動暫免、強制執行費
+    params:
+      kind: {type: enum, values: [property, non_property, retrial_ruling, appeal_ruling, mediation, execution], default: property, desc: "因財產權／非因財產權／對確定裁定聲請再審／抗告再抗告／聲請調解／強制執行"}
+      amount: {type: number, default: 0, desc: 訴訟標的金（價）額或執行標的金額}
+      instance: {type: int, default: 1, desc: "審級；2 或 3 依§77-16Ⅰ加徵十分之五"}
+      paid: {type: number, default: 0, desc: 已繳費用}
+      surcharge_version: {type: string, default: "114", desc: "加徵版本；114＝114/1/1起。113（舊法）尚未備料"}
+      court: {type: string, desc: "原審法院；金門/連江屬福建高等法院金門分院轄區，本版未收會拒算"}
+      labor: {type: bool, default: false, desc: "勞動事件法§12Ⅰ 暫免徵收三分之二"}
+      apply_surcharge: {type: bool, default: true, desc: "是否套用高院加徵（設 false 得純§77-13 額數）"}
+    resolved_2026_09_24: |
+      「新法 114/1/1」不是 §77-13 修正，而是各高等法院依 §77-27 報請司法院核准之**加徵**，
+      且加徵為累進三級（十萬以下+5/10、逾十萬至一千萬+3/10、逾一千萬+1/10），不是一律 1.5 倍。
+      §77-13 現行條文自 112/11/29 未變（十萬元以下 1,000 元），已對全國法規資料庫核實。
+      驗算照片錨點：一審 1000×1.5=1,500 ✓；二三審 §77-16 先×1.5 得 1,500、再依提高標準§3 ×1.5 得 2,250 ✓
+    caution: "各高等法院轄區之加徵標準各自發布，須先依原審法院定轄區。
+      9/24 已收臺灣高等法院（B0010054）與福建高等法院金門分院（B0010059）兩部，
+      逐條比對比例相同，全國適用同組比例；金門分院部§3Ⅲ另明定第二審訴之變更/追加/§54起訴/反訴準用。
+      舊法（113/12/31 前）之加徵版本仍未備料，surcharge_version=113 會拒算。"
+    data: [data/court_fees.yaml, data/raw/court_fees.yaml, data/raw/fee_surcharge.yaml]
+    provenance: "條文取自全國法規資料庫（19 條，effective_status 全為現行）；加徵標準 law.moj.gov.tw pcode=B0010054"
+    basis: [民訴§77-13, §77-14, §77-16Ⅰ, §77-17Ⅱ, §77-18, §77-19, §77-20, §77-27,
+            強執法§28-2Ⅰ, 勞動事件法§12Ⅰ, 臺灣高等法院提高徵收額數標準§2-§6]
+
 
 # ── 民事 ──────────────────────────────────────────────
   - id: depreciation
@@ -174,17 +190,29 @@ tools:
 
 # ── 刑事 ──────────────────────────────────────────────
   - id: sentence.range
-    name: 法定刑度加重減輕試算
+    name: 法定刑度加重減輕試算（處斷刑範圍＋宣告刑逾越檢查）
     group: 刑事
     photo: 11_IMG_5429
-    status: planned
-    summary: 法定刑（死刑/無期/有期/拘役/罰金）× 加重減輕事由（遞加遞減次數）→ 處斷刑範圍
-    inputs: [法定刑下上限, 應加重事由(1/2、1/3、2/3), 得加重事由, 應減輕事由, 得減輕事由, 遞加減次數]
-    needs:
-      - "刑法§64~§73 加減例之遞加遞減順序（§70 遞加遞減、§71 先加後減、§72 有二種以上刑名先定刑名）"
-      - "各該加重減輕事由之範例法條對照表（兒少§112Ⅰ、野保§41Ⅱ、毒危§17Ⅰ/Ⅱ、道交§86Ⅰ、刑法§116、§30Ⅱ 等，照片右欄已列）"
-    risk: "刑度算錯＝在法官前穿幫；未取得遞加減完整規則前不得出貨"
-    basis: [刑法§33, §64, §65, §66, §67, §68, §70, §71, §72, §73]
+    status: ready
+    module: sentence
+    summary: 法定刑 × 加重減輕事由 → 處斷刑範圍；給宣告刑則一併判斷有無逾越
+    params:
+      kind: {type: enum, values: [death, life, prison, detention, fine], default: prison, desc: 主刑種類}
+      min_months: {type: number, desc: "有期徒刑法定刑下限（月）；未給＝§33③ 2月"}
+      max_months: {type: number, desc: "有期徒刑法定刑上限（月）；5年＝60"}
+      min_days: {type: number, desc: 拘役下限（日）}
+      max_days: {type: number, desc: 拘役上限（日）}
+      min_amount: {type: number, desc: 罰金下限（元）}
+      max_amount: {type: number, desc: 罰金上限（元）}
+      adjustments: {type: array, desc: "[{type: aggravate|mitigate, fraction: 1/2|1/3|2/3, label, basis}]；依§71 程式自動先加後減、減輕先小後大"}
+      declared_months: {type: number, desc: "宣告刑（月）——給了就做逾越檢查"}
+      declared_days: {type: number, desc: 宣告拘役（日）}
+      declared_amount: {type: number, desc: 宣告罰金（元）}
+    caution: "只算加減例之形式範圍，不代為判斷有無加重減輕事由、不代為量刑（§57）；
+      數罪併罰定應執行刑（§51）不在範圍"
+    provenance: "刑法§33、§64~§73 於 2026-09-24 逐條經 LFinder :8022 核實 effective_status=現行"
+    basis: [刑法§33, §64, §65, §66, §67, §68, §69, §70, §71, §72, §73]
+
 
 # ── 其他（土地／租金／繼承）────────────────────────────
   - id: land.partition
@@ -251,6 +279,19 @@ tools:
     params:
       items: {type: array, required: true, desc: "[{kind: principal|interest|penalty, amount, start, end, rate|monthly}]"}
     basis: [民法§121, §123, §203, §233, §250]
+
+  - id: address.court
+    name: 地址→行政區→管轄地方法院
+    group: 通用
+    status: ready
+    module: address
+    summary: 當事人地址 → 行政區 → 管轄地方法院＋該轄區之在途期間日數（地院／高院／最高法院）
+    params:
+      address: {type: string, required: true, desc: "當事人住居所地址（可含郵遞區號、可用『台』）"}
+      city: {type: string, desc: "可選：直接指定縣市，用於消歧"}
+      district: {type: string, desc: "可選：直接指定行政區"}
+    caution: "撞名或只到縣市時回 ok:false＋candidates，不猜。臺北市分屬2院、新北市分屬4院、高雄市分屬2院"
+    basis: [法院訴訟當事人在途期間標準§2, §3, 民訴§162, 刑訴§66]
 
   - id: inheritance.tree
     name: 繼承系統表
@@ -322,7 +363,7 @@ tables:
     over_10_years: {base_days: 15, add_per_year: 1, cap: 30, label: 10年以上每1年加給1日，加至30日為止}
 
 # 詞彙路由表（/calc/match 用；純字串比對、零 LLM）。
-# 學習路徑鐵則：討論結晶入可校訂 YAML、程式動態讀，勿寫死 code。改這裡免重啟。
+# 設計原則：規則寫在可校訂的 YAML、程式動態讀取，不寫死在程式碼。改這裡免重啟。
 routing:
   time.elapsed:         [經過時間, 幾天, 多久, 算日數, 期間多長, 相隔, 經過幾年]
   interest.penalty:     [利息, 年息, 法定利息, 遲延利息, 違約金, 按月給付]

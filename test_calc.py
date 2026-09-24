@@ -60,7 +60,7 @@ r = router.run("calc.eval", {"expr": "1000000*0.05*88/365", "precision": 2})
 ck("小算盤", r["result"]["value"], 12054.79, 0.01)
 
 # ── 錨點12：未實作工具必須拒絕出貨
-for tid in ("sentence.range", "fee.court", "deadline.appeal", "inheritance.tree"):
+for tid in ("deadline.appeal", "inheritance.tree"):   # fee.court、sentence.range 已實作（v0.2.0）
     r = router.run(tid, {})
     ck_eq(f"{tid} 拒絕出貨", (r["ok"], bool(r.get("needs"))), (False, True))
 
@@ -81,6 +81,98 @@ r = router.run("leave.annual", {"onboard": "1100101", "leave": "1150401", "month
 ck("特休110.1.1~115.4.1 折算工資", r["result"]["unused_wage"], 94500, 0)
 ck_eq("離職當期全額不打折", r["result"]["periods"][-1]["days_counted"], 15.0)
 # ── 折舊平均法對照法院實例（成本7,778、5年、用3年2月 → 折舊4,105、餘3,673）
+r = router.run("depreciation", {"cost": 7778, "years": 5, "used_years": 3, "used_months": 2})
+ck("折舊實例累積折舊", r["result"]["accumulated_depreciation"], 4105)
+ck("折舊實例現值", r["result"]["present_value"], 3673)
+
+
+# ── 錨點14：地址→管轄法院（撞名與跨院切分必須拒答，不得猜）
+r = router.run("address.court", {"address": "臺北市大安區和平東路二段106號"})
+ck_eq("臺北大安區", r["result"]["courts"][0]["court"], "臺北地方法院")
+r = router.run("address.court", {"address": "台中市大安區中山南路1號"})
+ck_eq("臺中大安區（台→臺）", r["result"]["courts"][0]["court"], "臺中地方法院")
+r = router.run("address.court", {"address": "大安區和平東路"})
+ck_eq("大安區撞名拒答", (r["result"]["ok"], len(r["result"]["candidates"])), (False, 2))
+r = router.run("address.court", {"address": "新北市"})
+ck_eq("新北市只到市拒答", (r["result"]["ok"], len(r["result"]["candidates"])), (False, 4))
+r = router.run("address.court", {"address": "新北市新店區北新路三段"})
+ck_eq("新店區歸臺北地院", r["result"]["courts"][0]["court"], "臺北地方法院")
+r = router.run("address.court", {"address": "新北市瑞芳區"})
+ck_eq("瑞芳區歸基隆地院", r["result"]["courts"][0]["court"], "基隆地方法院")
+r = router.run("address.court", {"address": "金門縣烏坵鄉"})
+ck_eq("烏坵鄉特例日數", r["result"]["courts"][0]["days"]["local"], 30)
+r = router.run("address.court", {"address": "宜蘭縣礁溪鄉"})
+ck_eq("整縣市轄區", r["result"]["matched_by"], "whole_city")
+r = router.run("address.court", {"address": "美國洛杉磯（北美洲）"})
+ck_eq("北美洲44日", r["result"]["transit_days"], 44)
+r = router.run("address.court", {"address": "香港九龍"})
+ck_eq("港澳37日", r["result"]["transit_days"], 37)
+
+
+# ── 錨點15：司法規費（錨點取自司法院小工具畫面實測值）
+r = router.run("fee.court", {"kind": "property", "amount": 0, "instance": 1})
+ck("標的0元一審", r["result"]["total_due"], 1500)
+r = router.run("fee.court", {"kind": "property", "amount": 0, "instance": 2})
+ck("標的0元二三審", r["result"]["total_due"], 2250)
+# §77-13 純額數（不加徵）：500萬＝46,000（實務通說值）
+r = router.run("fee.court", {"kind": "property", "amount": 5000000, "apply_surcharge": False})
+ck("500萬純§77-13", r["result"]["total_due"], 46000)
+r = router.run("fee.court", {"kind": "property", "amount": 5000000})
+ck("500萬加徵後", r["result"]["total_due"], 60000)
+# 強執：100萬 →（100萬/100）×0.7 ×(1+1/7) = 8,000
+r = router.run("fee.court", {"kind": "execution", "amount": 1000000})
+ck("強執100萬", r["result"]["total_due"], 8000)
+r = router.run("fee.court", {"kind": "execution", "amount": 4999})
+ck("強執未滿5千免徵", r["result"]["total_due"], 0)
+# 勞動暫免三分之二
+r = router.run("fee.court", {"kind": "property", "amount": 1000000, "labor": True})
+ck("勞動暫免後現繳", r["result"]["total_due"], 4400)
+# 拒算：金門轄區、舊法版本
+# 9/24 已補金門分院標準（B0010059），比例與臺灣高等法院相同 → 改為可算並帶轄區提示
+r = router.run("fee.court", {"amount": 5000000, "court": "福建金門地方法院"})
+ck_eq("金門轄區可算", r["ok"], True)
+ck("金門與臺灣同額", r["result"]["total_due"], 60000)
+ck_eq("金門帶轄區提示", "金門分院" in (r["result"].get("region") or ""), True)
+r = router.run("fee.court", {"amount": 100, "surcharge_version": "113"})
+ck_eq("舊法版本拒算", r["ok"], False)
+
+
+# ── 錨點16：刑度加減例（刑法§33、§64-§73）
+A = [{"type": "aggravate", "fraction": "1/2"}]
+M = [{"type": "mitigate", "fraction": "1/2"}]
+r = router.run("sentence.range", {"kind": "prison", "min_months": 2, "max_months": 60, "adjustments": A})
+ck_eq("5年以下加重1/2", r["result"]["range_text"], "3月以上7年6月以下有期徒刑")
+r = router.run("sentence.range", {"kind": "prison", "min_months": 2, "max_months": 60, "adjustments": M})
+ck_eq("5年以下減輕1/2", r["result"]["range_text"], "1月以上2年6月以下有期徒刑")
+r = router.run("sentence.range", {"kind": "prison", "min_months": 2, "max_months": 60,
+                                  "adjustments": M + A})   # 程式應自動先加後減（§71Ⅰ）
+ck_eq("先加後減§71Ⅰ", r["result"]["range_text"], "1月15日以上3年9月以下有期徒刑")
+r = router.run("sentence.range", {"kind": "prison", "min_months": 2, "max_months": 180, "adjustments": A})
+ck_eq("§33③但書加至20年", r["result"]["range_text"], "3月以上20年以下有期徒刑")
+r = router.run("sentence.range", {"kind": "death", "adjustments": M})
+ck_eq("§64Ⅱ死刑減輕為無期", r["result"]["range_text"], "無期徒刑")
+r = router.run("sentence.range", {"kind": "death", "adjustments": M + M})
+ck_eq("§65Ⅱ遞減至有期", r["result"]["range_text"], "15年以上20年以下有期徒刑")
+r = router.run("sentence.range", {"kind": "death", "adjustments": A})
+ck_eq("§64Ⅰ死刑不得加重", r["result"]["range_text"], "死刑")
+r = router.run("sentence.range", {"kind": "prison", "min_months": 2, "max_months": 60,
+                                  "adjustments": A, "declared_months": 96})
+ck_eq("宣告8年逾越", r["result"]["declared_check"]["verdict"], "逾越處斷刑上限")
+r = router.run("sentence.range", {"kind": "prison", "min_months": 2, "max_months": 60,
+                                  "adjustments": A, "declared_months": 84})
+ck_eq("宣告7年在範圍內", r["result"]["declared_check"]["ok"], True)
+
+
+# ── 錨點16：特休離職當期全額（2026-09-24 訂正；舊版按比例得 77,548 為錯）
+r = router.run("leave.annual", {"onboard": "1100101", "leave": "1150401", "monthly_wage": 45000})
+ck("特休110.1.1~115.4.1 合計日數", r["result"]["entitled_days"], 63, 0)
+ck("特休110.1.1~115.4.1 折算工資", r["result"]["unused_wage"], 94500, 0)
+ck_eq("離職當期全額不打折", r["result"]["periods"][-1]["days_counted"], 15.0)
+# 滿1年取得7日後年度中離職，7日全額（施行細則§24Ⅰ取得時點）
+r = router.run("leave.annual", {"onboard": "1120901", "leave": "1131231"})
+ck("112.9.1到職113.12.31離職", r["result"]["entitled_days"], 10, 0)
+
+# ── 錨點17：折舊平均法對照法院實例（成本7,778、5年、用3年2月 → 折舊4,105、餘3,673）
 r = router.run("depreciation", {"cost": 7778, "years": 5, "used_years": 3, "used_months": 2})
 ck("折舊實例累積折舊", r["result"]["accumulated_depreciation"], 4105)
 ck("折舊實例現值", r["result"]["present_value"], 3673)

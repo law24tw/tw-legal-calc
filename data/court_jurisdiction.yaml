@@ -1,0 +1,574 @@
+# GENERATED — 勿手改；來源見 meta（parse_transit.py）
+meta:
+  source: 法院訴訟當事人在途期間標準 §2（law.moj.gov.tw pcode=B0010020）
+  parsed_at: '2026-09-24'
+  note: 由全形框線附表程式解析；days 0 = 不計在途期間
+  caution: 本表同時是法院管轄區域表。臺北市分屬 2 院、新北市分屬 4 院、高雄市分屬 2 院；地址只到縣市無法定法院，必須精確到行政區。
+courts:
+- court: 臺北地方法院
+  areas:
+  - kind: districts
+    city: 臺北市
+    districts:
+    - 中正區
+    - 松山區
+    - 信義區
+    - 文山區
+    - 大安區
+    - 萬華區
+    - 中山區
+    raw: （臺北市）中正區、松山區、信義區、文山區、大安區、萬華區、中山區。
+    days:
+      local: 0
+      high: 0
+      supreme: 0
+    high_court: 臺灣高等法院
+  - kind: districts
+    city: 新北市
+    districts:
+    - 新店區
+    - 烏來區
+    - 深坑區
+    - 石碇區
+    - 坪林區
+    raw: （新北市）新店區、烏來區、深坑區、石碇區、坪林區。
+    days:
+      local: 2
+      high: 2
+      supreme: 2
+    high_court: 臺灣高等法院
+- court: 士林地方法院
+  areas:
+  - kind: districts
+    city: 臺北市
+    districts:
+    - 士林區
+    - 北投區
+    - 大同區
+    - 內湖區
+    - 南港區
+    raw: （臺北市）士林區、北投區、大同區、內湖區、南港區。
+    days:
+      local: 0
+      high: 0
+      supreme: 0
+    high_court: 臺灣高等法院
+  - kind: districts
+    city: 新北市
+    districts:
+    - 汐止區
+    - 淡水區
+    - 八里區
+    - 三芝區
+    - 石門區
+    raw: （新北市）汐止區、淡水區、八里區、三芝區、石門區。
+    days:
+      local: 2
+      high: 2
+      supreme: 2
+    high_court: 臺灣高等法院
+- court: 新北地方法院
+  areas:
+  - kind: districts
+    city: 新北市
+    districts:
+    - 土城區
+    - 板橋區
+    - 三重區
+    - 永和區
+    - 中和區
+    - 新莊區
+    - 三峽區
+    - 樹林區
+    - 鶯歌區
+    - 泰山區
+    - 蘆洲區
+    - 五股區
+    - 林口區
+    raw: （新北市）土城區、板橋區、三重區、永和區、中和區、新莊區、三峽區、樹林區、鶯歌區、泰山區、蘆洲區、五股區、林口區。
+    days:
+      local: 0
+      high: 2
+      supreme: 2
+    high_court: 臺灣高等法院
+- court: 桃園地方法院
+  areas:
+  - kind: districts
+    city: 桃園市
+    districts:
+    - 桃園區
+    - 中壢區
+    - 平鎮區
+    - 八德區
+    - 楊梅區
+    - 大溪區
+    - 蘆竹區
+    - 大園區
+    - 龜山區
+    - 龍潭區
+    - 新屋區
+    - 觀音區
+    - 復興區
+    raw: （桃園市）桃園區、中壢區、平鎮區、八德區、楊梅區、大溪區、蘆竹區、大園區、龜山區、龍潭區、新屋區、觀音區、復興區。
+    days:
+      local: 0
+      high: 3
+      supreme: 3
+    high_court: 臺灣高等法院
+- court: 新竹地方法院
+  areas:
+  - kind: whole
+    city: 新竹市
+    districts: []
+    raw: 新竹市
+    days:
+      local: 2
+      high: 4
+      supreme: 4
+    high_court: 臺灣高等法院
+  - kind: whole
+    city: 新竹縣
+    districts: []
+    raw: 新竹縣
+    days:
+      local: 0
+      high: 4
+      supreme: 4
+    high_court: 臺灣高等法院
+- court: 宜蘭地方法院
+  areas:
+  - kind: whole
+    city: 宜蘭縣
+    districts: []
+    raw: 宜蘭縣
+    days:
+      local: 0
+      high: 4
+      supreme: 4
+    high_court: 臺灣高等法院
+- court: 基隆地方法院
+  areas:
+  - kind: whole
+    city: 基隆市
+    districts: []
+    raw: 基隆市
+    days:
+      local: 0
+      high: 2
+      supreme: 2
+    high_court: 臺灣高等法院
+  - kind: districts
+    city: 新北市
+    districts:
+    - 瑞芳區
+    - 貢寮區
+    - 雙溪區
+    - 平溪區
+    - 萬里區
+    - 金山區
+    raw: （新北市）瑞芳區、貢寮區、雙溪區、平溪區、萬里區、金山區。
+    days:
+      local: 2
+      high: 2
+      supreme: 2
+    high_court: 臺灣高等法院
+- court: 花蓮地方法院
+  areas:
+  - kind: whole
+    city: 花蓮縣
+    districts: []
+    raw: 花蓮縣
+    days:
+      local: 0
+      high: 0
+      supreme: 7
+    high_court: 臺灣高等法院花蓮分院
+- court: 臺東地方法院
+  areas:
+  - kind: whole
+    city: 臺東縣
+    districts: []
+    raw: 臺東縣
+    days:
+      local: 4
+      high: 4
+      supreme: 8
+    high_court: 臺灣高等法院花蓮分院
+- court: 苗栗地方法院
+  areas:
+  - kind: whole
+    city: 苗栗縣
+    districts: []
+    raw: 苗栗縣
+    days:
+      local: 0
+      high: 5
+      supreme: 6
+    high_court: 臺灣高等法院臺中分院
+- court: 臺中地方法院
+  areas:
+  - kind: districts
+    city: 臺中市
+    districts:
+    - 中區
+    - 東區
+    - 西區
+    - 南區
+    - 北區
+    - 西屯區
+    - 南屯區
+    - 北屯區
+    raw: （臺中市）中區、東區、西區、南區、北區、西屯區、南屯區、北屯區。
+    days:
+      local: 0
+      high: 0
+      supreme: 7
+    high_court: 臺灣高等法院臺中分院
+  - kind: districts
+    city: 臺中市
+    districts:
+    - 豐原區
+    - 大里區
+    - 太平區
+    - 東勢區
+    - 大甲區
+    - 清水區
+    - 沙鹿區
+    - 梧棲區
+    - 后里區
+    - 神岡區
+    - 潭子區
+    - 大雅區
+    - 新社區
+    - 石岡區
+    - 外埔區
+    - 大安區
+    - 烏日區
+    - 大肚區
+    - 龍井區
+    - 霧峰區
+    - 和平區
+    raw: （臺中市）豐原區、大里區、太平區、東勢區、大甲區、清水區、沙鹿區、梧棲區、后里區、神岡區、潭子區、大雅區、新社區、石岡區、外埔區、大安區、烏日區、大肚區、龍井區、霧峰區、和平區。
+    days:
+      local: 3
+      high: 3
+      supreme: 7
+    high_court: 臺灣高等法院臺中分院
+- court: 南投地方法院
+  areas:
+  - kind: whole
+    city: 南投縣
+    districts: []
+    raw: 南投縣
+    days:
+      local: 0
+      high: 6
+      supreme: 7
+    high_court: 臺灣高等法院臺中分院
+- court: 彰化地方法院
+  areas:
+  - kind: whole
+    city: 彰化縣
+    districts: []
+    raw: 彰化縣
+    days:
+      local: 0
+      high: 5
+      supreme: 6
+    high_court: 臺灣高等法院臺中分院
+- court: 雲林地方法院
+  areas:
+  - kind: whole
+    city: 雲林縣
+    districts: []
+    raw: 雲林縣
+    days:
+      local: 0
+      high: 4
+      supreme: 6
+    high_court: 臺灣高等法院臺南分院
+- court: 嘉義地方法院
+  areas:
+  - kind: whole
+    city: 嘉義市
+    districts: []
+    raw: 嘉義市
+    days:
+      local: 0
+      high: 4
+      supreme: 6
+    high_court: 臺灣高等法院臺南分院
+  - kind: whole
+    city: 嘉義縣
+    districts: []
+    raw: 嘉義縣
+    days:
+      local: 2
+      high: 4
+      supreme: 6
+    high_court: 臺灣高等法院臺南分院
+- court: 臺南地方法院
+  areas:
+  - kind: districts
+    city: 臺南市
+    districts:
+    - 東區
+    - 南區
+    - 北區
+    - 中西區
+    - 安南區
+    - 安平區
+    raw: （臺南市）東區、南區、北區、中西區、安南區、安平區。
+    days:
+      local: 0
+      high: 0
+      supreme: 6
+    high_court: 臺灣高等法院臺南分院
+  - kind: districts
+    city: 臺南市
+    districts:
+    - 新營區
+    - 永康區
+    - 鹽水區
+    - 白河區
+    - 麻豆區
+    - 佳里區
+    - 新化區
+    - 善化區
+    - 學甲區
+    - 柳營區
+    - 後壁區
+    - 東山區
+    - 下營區
+    - 六甲區
+    - 官田區
+    - 大內區
+    - 西港區
+    - 七股區
+    - 將軍區
+    - 北門區
+    - 新市區
+    - 安定區
+    - 山上區
+    - 玉井區
+    - 楠西區
+    - 南化區
+    - 左鎮區
+    - 仁德區
+    - 歸仁區
+    - 關廟區
+    - 龍崎區
+    raw: （臺南市）新營區、永康區、鹽水區、白河區、麻豆區、佳里區、新化區、善化區、學甲區、柳營區、後壁區、東山區、下營區、六甲區、官田區、大內區、西港區、七股區、將軍區、北門區、新市區、安定區、山上區、玉井區、楠西區、南化區、左鎮區、仁德區、歸仁區、關廟區、龍崎區。
+    days:
+      local: 2
+      high: 2
+      supreme: 6
+    high_court: 臺灣高等法院臺南分院
+- court: 高雄地方法院
+  areas:
+  - kind: districts
+    city: 高雄市
+    districts:
+    - 鹽埕區
+    - 鼓山區
+    - 三民區
+    - 新興區
+    - 前金區
+    - 苓雅區
+    - 前鎮區
+    - 旗津區
+    - 小港區
+    raw: （高雄市）鹽埕區、鼓山區、三民區、新興區、前金區、苓雅區、前鎮區、旗津區、小港區。
+    days:
+      local: 0
+      high: 0
+      supreme: 8
+    high_court: 臺灣高等法院高雄分院
+  - kind: districts
+    city: 高雄市
+    districts:
+    - 鳳山區
+    - 林園區
+    - 大寮區
+    raw: （高雄市）鳳山區、林園區、大寮區。
+    days:
+      local: 4
+      high: 4
+      supreme: 8
+    high_court: 臺灣高等法院高雄分院
+  - kind: districts
+    city: 高雄市
+    districts: []
+    raw: （高雄市）東沙島太平島
+    days:
+      local: 30
+      high: 30
+      supreme: 34
+    high_court: 臺灣高等法院高雄分院
+- court: 橋頭地方法院
+  areas:
+  - kind: districts
+    city: 高雄市
+    districts:
+    - 左營區
+    - 楠梓區
+    - 橋頭區
+    - 岡山區
+    - 燕巢區
+    - 大社區
+    - 仁武區
+    - 彌陀區
+    - 梓官區
+    raw: （高雄市）左營區、楠梓區。（高雄市）橋頭區、岡山區、燕巢區、大社區、仁武區、彌陀區、梓官區。
+    days:
+      local: 0
+      high: 4
+      supreme: 8
+    high_court: 臺灣高等法院高雄分院
+  - kind: districts
+    city: 高雄市
+    districts:
+    - 大樹區
+    - 鳥松區
+    - 田寮區
+    - 阿蓮區
+    - 路竹區
+    - 湖內區
+    - 茄萣區
+    - 永安區
+    - 旗山區
+    - 美濃區
+    - 六龜區
+    - 甲仙區
+    - 杉林區
+    - 內門區
+    - 茂林區
+    - 桃源區
+    - 那瑪夏區
+    raw: （高雄市）大樹區、鳥松區、田寮區、阿蓮區、路竹區、湖內區、茄萣區、永安區、旗山區、美濃區、六龜區、甲仙區、杉林區、內門區、茂林區、桃源區、那瑪夏區。
+    days:
+      local: 4
+      high: 4
+      supreme: 8
+    high_court: 臺灣高等法院高雄分院
+- court: 高雄少年及家事法院
+  areas:
+  - kind: districts
+    city: 高雄市
+    districts:
+    - 鹽埕區
+    - 鼓山區
+    - 左營區
+    - 楠梓區
+    - 三民區
+    - 新興區
+    - 前金區
+    - 苓雅區
+    - 前鎮區
+    - 旗津區
+    - 小港區
+    raw: （高雄市）鹽埕區、鼓山區、左營區、楠梓區、三民區、新興區、前金區、苓雅區、前鎮區、旗津區、小港區。
+    days:
+      local: 0
+      high: 0
+      supreme: 8
+    high_court: 臺灣高等法院高雄分院
+  - kind: districts
+    city: 高雄市
+    districts:
+    - 鳳山區
+    - 林園區
+    - 大寮區
+    - 大樹區
+    - 仁武區
+    - 大社區
+    - 鳥松區
+    - 岡山區
+    - 橋頭區
+    - 燕巢區
+    - 田寮區
+    - 阿蓮區
+    - 路竹區
+    - 湖內區
+    - 茄萣區
+    - 彌陀區
+    - 永安區
+    - 梓官區
+    - 旗山區
+    - 美濃區
+    - 六龜區
+    - 甲仙區
+    - 杉林區
+    - 內門區
+    - 茂林區
+    - 桃源區
+    - 那瑪夏區
+    raw: （高雄市）鳳山區、林園區、大寮區、大樹區、仁武區、大社區、鳥松區、岡山區、橋頭區、燕巢區、田寮區、阿蓮區、路竹區、湖內區、茄萣區、彌陀區、永安區、梓官區、旗山區、美濃區、六龜區、甲仙區、杉林區、內門區、茂林區、桃源區、那瑪夏區。
+    days:
+      local: 4
+      high: 4
+      supreme: 8
+    high_court: 臺灣高等法院高雄分院
+  - kind: districts
+    city: 高雄市
+    districts: []
+    raw: （高雄市）東沙島太平島
+    days:
+      local: 30
+      high: 30
+      supreme: 34
+    high_court: 臺灣高等法院高雄分院
+- court: 屏東地方法院
+  areas:
+  - kind: whole
+    city: 屏東縣
+    districts: []
+    raw: 屏東縣
+    days:
+      local: 0
+      high: 8
+      supreme: 8
+    high_court: 臺灣高等法院高雄分院
+- court: 澎湖地方法院
+  areas:
+  - kind: whole
+    city: 澎湖縣
+    districts: []
+    raw: 澎湖縣
+    days:
+      local: 0
+      high: 19
+      supreme: 19
+    high_court: 臺灣高等法院高雄分院
+- court: 金門地方法院
+  areas:
+  - kind: whole
+    city: 金門縣
+    districts: []
+    raw: 金門縣
+    days:
+      local: 0
+      high: 0
+      supreme: 30
+    high_court: 福建高等法院金門分院
+  - kind: special
+    city: ''
+    districts:
+    - 烏坵鄉
+    raw: 烏坵鄉
+    days:
+      local: 30
+      high: 30
+      supreme: 34
+    high_court: 福建高等法院金門分院
+- court: 連江地方法院
+  areas:
+  - kind: whole
+    city: 連江縣
+    districts: []
+    raw: 連江縣
+    days:
+      local: 0
+      high: 20
+      supreme: 30
+    high_court: 福建高等法院金門分院

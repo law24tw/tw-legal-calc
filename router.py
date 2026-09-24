@@ -22,14 +22,14 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import yaml                                          # noqa: E402
 from calc.dates import CalcError                     # noqa: E402
-from calc import basic, period, money, hoffmann, labor, land, loan   # noqa: E402
+from calc import basic, period, money, hoffmann, labor, land, loan, address, fees, sentence  # noqa: E402
 
 _REG = None
 _MTIME = None
 
 
 def registry(force=False):
-    """熱讀 registry.yaml（改 YAML 免重啟；學習路徑鐵則）。"""
+    """熱讀 registry.yaml（改 YAML 免重啟）。"""
     global _REG, _MTIME
     p = os.path.join(HERE, "registry.yaml")
     mt = os.path.getmtime(p)
@@ -58,6 +58,9 @@ HANDLERS = {
     "land.merge_share":     land.merge_share,
     "loan.installment":     loan.installment,
     "loan.balance":         loan.balance,
+    "address.court":        address.resolve,
+    "fee.court":            fees.court_fee,
+    "sentence.range":       sentence.sentence_range,
 }
 
 def keywords():
