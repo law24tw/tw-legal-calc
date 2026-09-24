@@ -126,7 +126,7 @@ tools:
       event: {type: roc_date, desc: "計算事由發生日（未填＝離職日）"}
       scheme: {type: enum, values: [old, new, both], default: both, desc: "舊制/新制/以94.7.1切分併計"}
       switch_date: {type: roc_date, default: "0940701", desc: 新制轉換日}
-    basis: [勞基法§17, 勞基法§2④平均工資, 勞退條例§12, "臺灣高等法院110年度勞上字第675號（算法二）", "行政院勞工委員會83.4.9台83勞動2字第25564號函（算法一）"]
+    basis: [勞基法§17, 勞基法§2④平均工資, 勞退條例§12, "最高法院110年度台上字第675號民事判決（算法二）", "行政院勞工委員會83.4.9台83勞動2字第25564號函（算法一）"]
 
   - id: interest.penalty
     name: 利息及違約金試算（司法規費試算）

@@ -29,7 +29,7 @@ def avg_wage(wages6=None, method="m1", event=None, **_):
     if not e:
         raise CalcError("算法二需給 event（計算事由發生日）以定期間總日數")
     days = (e - add_months(e, -6)).days
-    return total / D(days) * 30, f"算法二：6個月工資總額÷期間總日數{days}×30（臺灣高等法院110年度勞上字第675號）"
+    return total / D(days) * 30, f"算法二：6個月工資總額÷期間總日數{days}×30（最高法院110年度台上字第675號民事判決）"
 
 
 def severance(avg_wage_amount=None, wages6=None, wage_method="m1", onboard=None, leave=None,
