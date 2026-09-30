@@ -60,7 +60,7 @@ r = router.run("calc.eval", {"expr": "1000000*0.05*88/365", "precision": 2})
 ck("小算盤", r["result"]["value"], 12054.79, 0.01)
 
 # ── 錨點12：未實作工具必須拒絕出貨
-for tid in ("deadline.appeal", "inheritance.tree"):   # fee.court、sentence.range 已實作（v0.2.0）
+for tid in ():   # 21 支已全數實作；保留迴圈供日後新增 planned 工具
     r = router.run(tid, {})
     ck_eq(f"{tid} 拒絕出貨", (r["ok"], bool(r.get("needs"))), (False, True))
 
@@ -176,6 +176,79 @@ ck("112.9.1到職113.12.31離職", r["result"]["entitled_days"], 10, 0)
 r = router.run("depreciation", {"cost": 7778, "years": 5, "used_years": 3, "used_months": 2})
 ck("折舊實例累積折舊", r["result"]["accumulated_depreciation"], 4105)
 ck("折舊實例現值", r["result"]["present_value"], 3673)
+
+
+# ── 錨點18：上訴抗告再審期間（對照司法院小工具試算欄 (i)(ii)(A)(B)(C)；在途日數由原始附表另算、非由程式自證）
+def dl(**p):
+    r = router.run("deadline.appeal", p)
+    return r["result"] if r["ok"] else r
+# 司法院官網範例：109.3.9 收受、20日 → 末日 3.29（星期日）
+r = dl(court="臺北地方法院", received="1090309", address="臺北市大安區", check_holidays=False)
+ck_eq("司法院範例 原末日", (r["last_day_raw"], r["last_day_raw_weekday"]), ("109.3.29", "日"))
+# 最高法院86台簡聲11：85.7.11 送達、無在途、7/31 與 8/1 臺北市停止上班 → 8/2 未逾期
+r = dl(court="臺北地方法院", received="0850711", address="臺北市大安區", agent_in_court_location=True,
+       closures=["0850731", "0850801"])
+ck_eq("86台簡聲11 颱風順延", r["last_day"], "85.8.2")
+# 最高法院86台聲121：85.7.12 送達代理人（事務所在法院所在地）、7/31 下午半日＋8/1 全日停班 → 8/2
+r = dl(court="臺灣高等法院臺南分院", received="0850712", address="臺南市東區", agent_in_court_location=True,
+       closures=[{"date": "0850731", "half": True}, "0850801"])
+ck_eq("86台聲121 颱風順延", r["last_day"], "85.8.2")
+# 辦公日曆（人事行政總處）順延
+ck_eq("孔子誕辰順延", dl(court="臺北地方法院", received="1150908", address="臺北市大安區")["last_day"], "115.9.29")
+ck_eq("國慶逢週六再順延至週一", dl(court="臺北地方法院", received="1150920", address="臺北市大安區")["last_day"], "115.10.12")
+ck_eq("補班週六不順延", dl(court="臺北地方法院", received="1140119", address="臺北市大安區")["last_day"], "114.2.8")
+# 在途期間（期望值由 court_jurisdiction.yaml 原始附表另算）
+r = dl(court="臺北地方法院", received="1150901", address="桃園市桃園區")
+ck_eq("§3一(一) 桃園區→北院 (i)+(ii)", (r["transit_i"], r["transit_ii"], r["transit_B"]), (2, 0, 2))
+r = dl(court="臺灣高等法院", received="1150901", address="臺中市西屯區")
+ck_eq("§3一(一) 西屯區→臺灣高等法院", (r["transit_i"], r["transit_ii"], r["transit_B"]), (4, 3, 7))
+r = dl(court="臺灣高等法院高雄分院", received="1150901", address="臺北市大安區")
+ck_eq("§3一(一) 高雄分院以8日計", (r["transit_i"], r["transit_B"]), (8, 10))
+ck_eq("§2 桃園區→臺灣高等法院（轄區內）", dl(court="臺灣高等法院", received="1150901", address="桃園市桃園區")["transit_B"], 3)
+ck_eq("§3一(二) 臺北市北院轄區→士林 0日", dl(court="士林地方法院", received="1150901", address="臺北市大安區")["transit_B"], 0)
+ck_eq("§3一(二) 板橋區→北院 2日", dl(court="臺北地方法院", received="1150901", address="新北市板橋區")["transit_B"], 2)
+ck_eq("§3一(三) 苓雅區→橋頭 2日", dl(court="橋頭地方法院", received="1150901", address="高雄市苓雅區")["transit_B"], 2)
+ck_eq("§3一(三) 鳳山區→橋頭 4日", dl(court="橋頭地方法院", received="1150901", address="高雄市鳳山區")["transit_B"], 4)
+ck_eq("§3一(三) 東沙島→橋頭 30日", dl(court="橋頭地方法院", received="1150901", address="高雄市東沙島")["transit_B"], 30)
+ck_eq("§3一(四) 金門→連江 20日", dl(court="連江地方法院", received="1150901", address="金門縣金城鎮")["transit_B"], 20)
+ck_eq("§3三 北美洲 44日", dl(court="臺北地方法院", received="1150901", address="北美洲")["transit_B"], 44)
+ck_eq("§3二 港澳 37日", dl(court="臺北地方法院", received="1150901", address="香港")["transit_B"], 37)
+ck_eq("民訴§162但書 代理人在法院所在地", dl(court="臺北地方法院", received="1150901", address="北美洲",
+                                         agent_in_court_location=True)["transit_B"], 0)
+# 送達生效期間
+ck_eq("寄存+10", dl(court="臺北地方法院", received="1150901", address="臺北市大安區", service="deposit")["service_C"], 10)
+ck_eq("刑事公示+30（刑訴§60Ⅱ）", dl(category="criminal", court="臺北地方法院", received="1150901",
+                                  address="臺北市大安區", service="public")["service_C"], 30)
+ck_eq("刑事抗告10日（刑訴§406）", dl(category="criminal", action="interlocutory", court="臺北地方法院",
+                                    received="1150901", address="臺北市大安區")["period_A"], 10)
+# 拒答
+ck_eq("行政訴訟拒算", dl(category="admin", court="臺北地方法院", received="1150901", address="臺北市大安區")["ok"], False)
+ck_eq("住居所只到新北市拒算", dl(court="臺北地方法院", received="1150901", address="新北市")["ok"], False)
+ck_eq("再審帶起算點旗標", any("起算點" in f for f in dl(action="retrial", court="臺北地方法院", received="1150901",
+                                                     address="臺北市大安區")["flags"]), True)
+
+# ── 錨點19：繼承系統表（民法§1138–§1141、§1144、§1145、§1176、§1223 原文逐條推導；分數比對）
+def ih(**p):
+    r = router.run("inheritance.tree", p)
+    d = {h["name"]: h["share"] for h in r["result"]["heirs"]} if r["ok"] else r
+    if r["ok"] and r["result"].get("spouse"): d[r["result"]["spouse"]["name"]] = r["result"]["spouse"]["share"]
+    return d
+ck_eq("§1144① 配偶+2子 各1/3", ih(spouse={"name": "配偶"}, heirs=[{"name": "甲", "relation": "child"}, {"name": "乙", "relation": "child"}]), {"配偶": "1/3", "甲": "1/3", "乙": "1/3"})
+ck_eq("§1144② 配偶+父母", ih(spouse={"name": "配偶"}, heirs=[{"name": "父", "relation": "parent"}, {"name": "母", "relation": "parent"}]), {"配偶": "1/2", "父": "1/4", "母": "1/4"})
+ck_eq("§1144② 配偶+兄妹", ih(spouse={"name": "配偶"}, heirs=[{"name": "兄", "relation": "sibling"}, {"name": "妹", "relation": "sibling"}]), {"配偶": "1/2", "兄": "1/4", "妹": "1/4"})
+ck_eq("§1144③ 配偶+祖父母", ih(spouse={"name": "配偶"}, heirs=[{"name": "祖父", "relation": "grandparent"}, {"name": "祖母", "relation": "grandparent"}]), {"配偶": "2/3", "祖父": "1/6", "祖母": "1/6"})
+ck_eq("§1141 無配偶3子", ih(heirs=[{"name": "甲", "relation": "child"}, {"name": "乙", "relation": "child"}, {"name": "丙", "relation": "child"}]), {"甲": "1/3", "乙": "1/3", "丙": "1/3"})
+ck_eq("§1140 代位按股", ih(spouse={"name": "配偶"}, heirs=[{"name": "甲", "relation": "child"}, {"name": "乙", "relation": "child", "status": "dead_before"}, {"name": "乙1", "relation": "grandchild", "via": "乙"}, {"name": "乙2", "relation": "grandchild", "via": "乙"}]), {"配偶": "1/3", "甲": "1/3", "乙1": "1/6", "乙2": "1/6"})
+ck_eq("拋棄不代位（§1176Ⅰ）", ih(spouse={"name": "配偶"}, heirs=[{"name": "甲", "relation": "child"}, {"name": "乙", "relation": "child", "status": "renounced"}, {"name": "乙1", "relation": "grandchild", "via": "乙"}]), {"配偶": "1/2", "甲": "1/2"})
+ck_eq("§1176Ⅴ 子全拋棄→孫按人數", ih(heirs=[{"name": "甲", "relation": "child", "status": "renounced"}, {"name": "乙", "relation": "child", "status": "renounced"}, {"name": "甲1", "relation": "grandchild", "via": "甲"}, {"name": "甲2", "relation": "grandchild", "via": "甲"}, {"name": "乙1", "relation": "grandchild", "via": "乙"}]), {"甲1": "1/3", "甲2": "1/3", "乙1": "1/3"})
+ck_eq("§1176Ⅲ 同順序均拋棄無後順序→配偶全部", ih(spouse={"name": "配偶"}, heirs=[{"name": "甲", "relation": "child", "status": "renounced"}]), {"配偶": "1"})
+ck_eq("§1176Ⅳ 配偶拋棄", ih(spouse={"name": "配偶", "status": "renounced"}, heirs=[{"name": "甲", "relation": "child"}, {"name": "乙", "relation": "child"}]), {"甲": "1/2", "乙": "1/2"})
+ck_eq("§1145 喪失繼承權→代位", ih(heirs=[{"name": "甲", "relation": "child"}, {"name": "乙", "relation": "child", "status": "disqualified"}, {"name": "乙1", "relation": "grandchild", "via": "乙"}]), {"甲": "1/2", "乙1": "1/2"})
+ck_eq("§1144④ 只有配偶", ih(spouse={"name": "配偶"}), {"配偶": "1"})
+ck_eq("§1176Ⅵ 子全拋棄→父母＋配偶", ih(spouse={"name": "配偶"}, heirs=[{"name": "甲", "relation": "child", "status": "renounced"}, {"name": "父", "relation": "parent"}]), {"配偶": "1/2", "父": "1/2"})
+r = router.run("inheritance.tree", {"spouse": {"name": "配偶"}, "heirs": [{"name": "甲", "relation": "child"}, {"name": "乙", "relation": "child"}]})["result"]
+ck_eq("§1223① 特留分＝應繼分1/2", [h["compulsory_portion"] for h in r["heirs"]], ["1/6", "1/6"])
+ck_eq("無繼承人→旗標無人承認", any("無人承認" in f for f in router.run("inheritance.tree", {"heirs": []})["result"]["flags"]), True)
 
 
 print("\n" + ("全部通過" if not F else f"失敗 {len(F)} 項：{F}"))

@@ -3,11 +3,12 @@
 #       依司法院辦案小工具各頁「說明」欄所載計算式與現行法令獨立實作
 # 鐵則：status != ready 者，router 一律回 ok:false + needs，不得臆測數字。
 meta:
-  version: 0.1.2
-  updated: "2026-09-24"
+  version: 0.3.0
+  updated: "2026-10-01"
   port: 8004
   principle: "取不到不准臆測；每個 ready 工具必附 basis（法源/計算式出處）"
   history:
+    - {date: "2026-10-01", note: "v0.3.0 deadline.appeal（在途期間§2 附表＋§3 特則、辦公日曆 2024–2027、天然災害停班順延）與 inheritance.tree（應繼分／特留分／代位／拋棄歸屬）上線；21 支全數 ready"}
     - {date: "2026-09-24", note: "v0.1.1 建立；17 支司法院小工具（含1支兩版合併）+ Excel專區借款還款餘額表 + 小算盤 + 銀行分期 = 20 支入冊"}
 
 groups:
@@ -24,13 +25,24 @@ tools:
     name: 上訴抗告再審期間試算
     group: 通用
     photo: 01_IMG_5419
-    status: planned
-    summary: 裁判收受日 + 不變期間 + 在途期間 + 公示送達生效期間 → 上訴/抗告末日（含假日順延）
-    inputs: [原審法院, 上訴/抗告/再審/就審/再審抗告, 送達方式(一般/寄存/公示送達), 當事人住居所(臺灣/大陸港澳/國外), 裁判收受日, 是否檢查假日]
-    needs:
-      - "司法院訴訟當事人在途期間標準表（法院 × 住居地 → 在途日數）"
-      - "國定假日表（逐年，供末日順延）"
-    basis: [民訴§440, 民訴§487, 民訴§500, 民訴§162, 刑訴§349, 司法院訴訟當事人在途期間標準]
+    status: ready
+    module: deadline
+    summary: 收受日 + 不變期間(A) + 在途期間(B＝(i)原審法院區域＋(ii)居住地地院區域) + 寄存／公示送達生效期間(C) → 末日（依辦公日曆與天然災害停班順延）
+    params:
+      category: {type: enum, values: [civil, criminal], default: civil, desc: "民事／刑事（行政訴訟本版未收）"}
+      action: {type: enum, values: [appeal, interlocutory, retrial], default: appeal, desc: "上訴／抗告／再審（刑事只有上訴、抗告）"}
+      court: {type: string, required: true, desc: "原審法院＝提出書狀之法院，如 臺北地方法院、臺灣高等法院臺中分院"}
+      received: {type: roc_date, required: true, desc: "裁判收受日；寄存送達填寄存日；公示送達填公告或最後登載日；再審填起算日"}
+      service: {type: enum, values: [normal, deposit, public, public_abroad], default: normal, desc: "一般／寄存（+10日）／公示（民事+20日、刑事+30日）／應於外國送達之公示（民事+60日）"}
+      address: {type: string, desc: "當事人住居所（精確到行政區）；大陸港澳或國外請寫洲別，如 北美洲"}
+      city: {type: string, desc: "可選：縣市，消歧用"}
+      district: {type: string, desc: "可選：行政區"}
+      agent_in_court_location: {type: bool, default: false, desc: "民事：訴訟代理人住居法院所在地且得為期間內應為之訴訟行為者→不扣在途期間（民訴§162Ⅰ但書）"}
+      check_holidays: {type: bool, default: true, desc: "依行政機關辦公日曆順延末日"}
+      closures: {type: array, desc: "受理書狀處所因天然災害停止上班之日 [YYYMMDD 或 {date, half: true}]"}
+      in_custody: {type: bool, default: false, desc: "刑事：被告在監所（刑訴§351Ⅰ）"}
+    caution: 不變期間逾期即失權。結果為試算，應以送達證書、停止上班公告與辦公日曆覆核；行政訴訟、智慧財產及商業法院不在本版範圍。
+    basis: [民訴§440, 民訴§487, 民訴§500, 民訴§138Ⅱ, 民訴§152, 民訴§161, 民訴§162, 刑訴§60Ⅱ, 刑訴§62, 刑訴§65, 刑訴§66, 刑訴§349, 刑訴§351, 刑訴§406, 民法§120Ⅱ, 民法§122, 法院訴訟當事人在途期間標準§2、§3, 最高法院86年度台聲字第121號民事裁定, 最高法院86年度台簡聲字第11號民事裁定, 最高法院103年度台抗字第874號刑事裁定, 法務部99.02.03函（補班之星期六非休息日）]
 
   - id: time.elapsed
     name: 經過時間試算
@@ -297,15 +309,17 @@ tools:
     name: 繼承系統表
     group: 其他
     photo: 17_IMG_5435
-    status: planned
-    summary: 被繼承人/繼承人/出生死亡日/繼承狀態 → 繼承系統表與應繼分
-    inputs: [稱謂, 繼承人, 被繼承人, 繼承狀態, 出生日期, 死亡日期, 結婚日期, 建檔日期, 應繼分]
-    needs:
-      - "應繼分演算（民法§1138 順序、§1140 代位、§1144 配偶、§1176 拋棄之歸屬）"
-      - "系統表之圖形輸出（可掛 PR002 事實圖生成）"
-    basis: [民法§1138, §1139, §1140, §1141, §1144, §1176]
+    status: ready
+    module: inheritance
+    summary: 配偶＋各繼承人（關係／狀態：在世、繼承開始前死亡、拋棄、喪失繼承權）→ 適用順序、每人應繼分（分數）、特留分、系統表文字；代位按股、拋棄不代位
+    params:
+      decedent: {type: string, default: 被繼承人, desc: 被繼承人稱謂或代號（系統表抬頭）}
+      spouse: {type: object, desc: "配偶 {name, status: alive|dead_before|renounced|disqualified}；無配偶不填"}
+      heirs: {type: array, required: true, desc: "繼承人陣列，每人 {name, relation: child|grandchild|great_grandchild|parent|sibling|grandparent, status: alive|dead_before|renounced|disqualified, via: 代位時填被代位人之 name}"}
+    outputs: order_used／heirs[{name, relation, via, share（分數）, share_float, compulsory_portion（特留分比例）}]／spouse／tree（系統表文字）／flags／sum_check
+    caution: 應繼分為法定比例；遺囑指定應繼分與遺贈扣減（§1187、§1225）、收養之認定、胎兒（§1166）、同時死亡推定（§11）、大陸地區人民限額（兩岸條例§67）、限定繼承清算皆不處理，回旗標由使用者判定。§1223 另有未生效修正版，生效後特留分比例須重核。
+    basis: [民法§1138, §1139, §1140, §1141, §1144, §1145, §1176, §1223, §1224]
 
-# ── 自建（非司法院小工具）──────────────────────────────
   - id: calc.eval
     name: 計算機（小算盤式）
     group: 自建

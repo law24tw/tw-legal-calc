@@ -22,7 +22,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import yaml                                          # noqa: E402
 from calc.dates import CalcError                     # noqa: E402
-from calc import basic, period, money, hoffmann, labor, land, loan, address, fees, sentence  # noqa: E402
+from calc import basic, period, money, hoffmann, labor, land, loan, address, fees, sentence, deadline, inheritance  # noqa: E402
 
 _REG = None
 _MTIME = None
@@ -61,6 +61,8 @@ HANDLERS = {
     "address.court":        address.resolve,
     "fee.court":            fees.court_fee,
     "sentence.range":       sentence.sentence_range,
+    "deadline.appeal":      deadline.deadline,
+    "inheritance.tree":     inheritance.tree,
 }
 
 def keywords():
